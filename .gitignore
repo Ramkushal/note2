@@ -1,0 +1,44 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+eb_log.txt
+eb_debug.log
+
+# Dependencies (restored by `npm install`)
+node_modules
+
+# Build outputs (restored by `npm run build` / `npm run dist`)
+dist
+dist-ssr
+*.local
+
+# Electron packager/builder outputs
+release
+out
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# Environment variables (keep secrets out of git)
+.env
+.env.*
+!.env.example
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+Thumbs.db
