@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import type { Annotation, AppUser, AuditEntry, DocumentAnnotations } from '../types/annotation';
 import { saveDocumentAnnotations, loadDocumentAnnotations, addAuditEntry, makeDocId } from '../db/annotationDb';
+import { useNotesStore } from './notesStore';
 
 // ─── State Shape ────────────────────────────────────────────────────────────
 
@@ -84,12 +85,15 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
     const docId = makeDocId(file.name);
     set({ pdfFile: file, pdfUrl: null, docName: file.name, docId, docVersion: 1, annotations: [], currentPage: 1 });
     await get().loadFromDb(docId);
+    // Init notes AFTER annotations are loaded
+    await useNotesStore.getState().initNotes(docId, file.name, get().annotations);
   },
 
   setPdfUrl: async (url: string, name: string) => {
     const docId = makeDocId(name);
     set({ pdfUrl: url, pdfFile: null, docName: name, docId, docVersion: 1, annotations: [], currentPage: 1 });
     await get().loadFromDb(docId);
+    await useNotesStore.getState().initNotes(docId, name, get().annotations);
   },
 
   setCurrentPage: (page) => set({ currentPage: page }),
@@ -112,24 +116,28 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
       version: docVersion,
       saved: false,
     };
-    set({ annotations: [...annotations, annotation] });
+    const next = [...annotations, annotation];
+    set({ annotations: next });
+    useNotesStore.getState().rebuildAutoBlock(next);
     get().addAudit({ action: 'create_highlight', page: annotation.page, annotationId: annotation.id });
     return annotation;
   },
 
   updateAnnotation: (id, patch) => {
-    set((s) => ({
-      annotations: s.annotations.map((a) =>
-        a.id === id ? { ...a, ...patch, updatedAt: new Date().toISOString() } : a
-      ),
-    }));
-    get().addAudit({ action: 'update_highlight', page: get().annotations.find(a => a.id === id)?.page ?? 0, annotationId: id });
+    const next = get().annotations.map((a) =>
+      a.id === id ? { ...a, ...patch, updatedAt: new Date().toISOString() } : a
+    );
+    set({ annotations: next });
+    useNotesStore.getState().rebuildAutoBlock(next);
+    get().addAudit({ action: 'update_highlight', page: next.find(a => a.id === id)?.page ?? 0, annotationId: id });
   },
 
   deleteAnnotation: (id) => {
     const ann = get().annotations.find(a => a.id === id);
     get().addAudit({ action: 'delete_highlight', page: ann?.page ?? 0, annotationId: id });
-    set((s) => ({ annotations: s.annotations.filter((a) => a.id !== id), selectedAnnotationId: null }));
+    const next = get().annotations.filter((a) => a.id !== id);
+    set({ annotations: next, selectedAnnotationId: null });
+    useNotesStore.getState().rebuildAutoBlock(next);
   },
 
   selectAnnotation: (id) => set({ selectedAnnotationId: id }),
@@ -144,7 +152,10 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
     set({ isSaving: true, saveStatus: 'saving' });
     try {
       const doc = get().getDocumentAnnotations();
-      await saveDocumentAnnotations(doc);
+      await Promise.all([
+        saveDocumentAnnotations(doc),
+        useNotesStore.getState().saveNotes(),
+      ]);
       set((s) => ({
         isSaving: false,
         saveStatus: 'saved',
@@ -164,6 +175,7 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
     if (doc) {
       set({ annotations: doc.annotations, docVersion: doc.version + 1 });
     }
+    // Notes init is called by setPdfFile/setPdfUrl after this returns
   },
 
   getDocumentAnnotations: (): DocumentAnnotations => {
@@ -176,7 +188,7 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
     const { currentUser, auditLog } = get();
     const full: AuditEntry = { ...entry, user: currentUser.name, timestamp: new Date().toISOString() };
     set({ auditLog: [...auditLog, full] });
-    addAuditEntry(full).catch(() => {});
+    addAuditEntry(full).catch(() => { });
   },
 }));
 

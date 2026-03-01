@@ -38,3 +38,23 @@ export interface AppUser {
   name: string;
   color: [number, number, number];
 }
+
+// ─── Notes Layer ─────────────────────────────────────────────────────────────
+
+/** One entry in the highlight-to-anchor map for bidirectional linking */
+export interface HighlightAnchor {
+  highlightId: string;
+  anchor: string; // markdown heading anchor, e.g. "highlight-abc123"
+}
+
+/** Persisted Markdown notes document — one per PDF */
+export interface DocumentNotes {
+  docId: string;
+  version: number;
+  markdown: string;             // full markdown string (auto + personal)
+  linkedHighlights: HighlightAnchor[];
+  savedAt: string;              // ISO8601
+}
+
+/** Panel display mode */
+export type NotesPanelMode = 'view' | 'edit' | 'split';

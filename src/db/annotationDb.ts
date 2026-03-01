@@ -1,9 +1,9 @@
 import { openDB } from 'idb';
 import type { IDBPDatabase } from 'idb';
-import type { DocumentAnnotations, AuditEntry } from '../types/annotation';
+import type { DocumentAnnotations, AuditEntry, DocumentNotes } from '../types/annotation';
 
 const DB_NAME = 'pdf-annotator';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // v2 adds 'notes' store
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let db: IDBPDatabase<any> | null = null;
@@ -18,6 +18,10 @@ async function getDb() {
         }
         if (!database.objectStoreNames.contains('auditLog')) {
           database.createObjectStore('auditLog', { keyPath: 'timestamp' });
+        }
+        // v2: per-document markdown notes
+        if (!database.objectStoreNames.contains('notes')) {
+          database.createObjectStore('notes', { keyPath: 'docId' });
         }
       },
     });
@@ -69,6 +73,18 @@ export function downloadAnnotationsJson(doc: DocumentAnnotations): void {
   a.download = `${doc.docName}-v${doc.version}.annotations.json`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+// ─── Notes Store ─────────────────────────────────────────────────────────────
+
+export async function saveDocumentNotes(notes: DocumentNotes): Promise<void> {
+  const database = await getDb();
+  await database.put('notes', notes);
+}
+
+export async function loadDocumentNotes(docId: string): Promise<DocumentNotes | undefined> {
+  const database = await getDb();
+  return database.get('notes', docId);
 }
 
 /** Generate a stable doc ID from filename */

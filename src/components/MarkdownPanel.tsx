@@ -1,36 +1,37 @@
 /**
- * MarkdownPanel component
- * Groups annotations by page into one card per page.
- * Within each page, annotations are sorted top-to-bottom, left-to-right
- * (matching their visual order in the PDF).
- * Clicking the page badge scrolls the PDF to that page.
+ * MarkdownPanel — Enterprise Edition
+ *
+ * Two top-level tabs:
+ *   - Annotations: existing page-card UI (unchanged)
+ *   - Notes: react-markdown view / raw textarea edit / split mode
+ *
+ * Notes tab sub-modes: 'view' | 'edit' | 'split' (default)
+ * Bidirectional link: clicking a highlight heading → scrollToAnnotation()
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { useAnnotationStore } from '../store/annotationStore';
-import { downloadMarkdown } from '../engine/markdownEngine';
+import { useNotesStore } from '../store/notesStore';
+import { splitAutoBlock } from '../engine/markdownEngine';
 import type { Annotation } from '../types/annotation';
+import type { NotesPanelMode } from '../types/annotation';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function rgbToCss(color: [number, number, number], alpha = 1): string {
-  return `rgba(${Math.round(color[0]*255)},${Math.round(color[1]*255)},${Math.round(color[2]*255)},${alpha})`;
+  return `rgba(${Math.round(color[0] * 255)},${Math.round(color[1] * 255)},${Math.round(color[2] * 255)},${alpha})`;
 }
 
-/**
- * Sort annotations within a page top-to-bottom, left-to-right.
- * rect = [x1, y1, x2, y2] in PDF user space (Y origin = bottom-left).
- * Higher y2 = higher on the page → sort descending.
- */
 function sortByPosition(anns: Annotation[]): Annotation[] {
   return [...anns].sort((a, b) => {
-    const yDiff = b.rect[3] - a.rect[3]; // descending y2
+    const yDiff = b.rect[3] - a.rect[3];
     if (Math.abs(yDiff) > 4) return yDiff;
-    return a.rect[0] - b.rect[0];        // ascending x1 for same line
+    return a.rect[0] - b.rect[0];
   });
 }
 
-// ─── Single annotation row inside a page card ─────────────────────────────────
+// ─── AnnRow ───────────────────────────────────────────────────────────────────
 
 interface AnnRowProps {
   ann: Annotation;
@@ -44,30 +45,17 @@ const AnnRow: React.FC<AnnRowProps> = ({ ann, index, isSelected, onSelect }) => 
   const [editing, setEditing] = useState(false);
   const [comment, setComment] = useState(ann.contents);
 
-  const dotColor  = rgbToCss(ann.color);
-  const dotBg     = rgbToCss(ann.color, 0.2);
-
+  const dotColor = rgbToCss(ann.color);
+  const dotBg = rgbToCss(ann.color, 0.2);
   const save = () => { updateAnnotation(ann.id, { contents: comment }); setEditing(false); };
 
   return (
-    <div
-      className={`ann-row ${isSelected ? 'selected' : ''}`}
-      onClick={() => onSelect(ann.id)}
-    >
-      {/* index bubble */}
-      <span className="ann-row-idx" style={{ background: dotBg, color: dotColor }}>
-        {index}
-      </span>
+    <div className={`ann-row ${isSelected ? 'selected' : ''}`} onClick={() => onSelect(ann.id)}>
+      <span className="ann-row-idx" style={{ background: dotBg, color: dotColor }}>{index}</span>
 
       <div className="ann-row-body">
-        {/* highlighted text */}
-        {ann.extractedText && (
-          <span className="ann-row-mark">
-            {ann.extractedText}
-          </span>
-        )}
+        {ann.extractedText && <span className="ann-row-mark">{ann.extractedText}</span>}
 
-        {/* comment */}
         {editing ? (
           <div className="ann-comment-editor" onClick={e => e.stopPropagation()}>
             <textarea
@@ -94,19 +82,16 @@ const AnnRow: React.FC<AnnRowProps> = ({ ann, index, isSelected, onSelect }) => 
         )}
       </div>
 
-      {/* delete */}
       <button
         className="ann-item-delete"
         onClick={e => { e.stopPropagation(); deleteAnnotation(ann.id); }}
         title="Delete"
-      >
-        ✕
-      </button>
+      >✕</button>
     </div>
   );
 };
 
-// ─── One card per page ────────────────────────────────────────────────────────
+// ─── PageCard ─────────────────────────────────────────────────────────────────
 
 interface PageCardProps {
   page: number;
@@ -122,21 +107,13 @@ const PageCard: React.FC<PageCardProps> = ({ page, anns, selectedId, onJumpPage,
 
   return (
     <div className="page-card">
-      {/* card header */}
       <div className="page-card-header">
-        <button
-          className="ann-page-link"
-          onClick={() => onJumpPage(page)}
-          title={`Scroll to page ${page}`}
-        >
-          Page {page}
-          <span className="ann-page-arrow">↗</span>
+        <button className="ann-page-link" onClick={() => onJumpPage(page)} title={`Scroll to page ${page}`}>
+          Page {page}<span className="ann-page-arrow">↗</span>
         </button>
         <span className="page-card-count">{anns.length} note{anns.length !== 1 ? 's' : ''}</span>
         {hasUnsaved && <span className="ann-unsaved-dot" title="Unsaved changes">●</span>}
       </div>
-
-      {/* annotation rows */}
       <div className="page-card-rows">
         {sorted.map((ann, i) => (
           <AnnRow
@@ -152,15 +129,146 @@ const PageCard: React.FC<PageCardProps> = ({ page, anns, selectedId, onJumpPage,
   );
 };
 
-// ─── Panel ────────────────────────────────────────────────────────────────────
+// ─── NotesTabContent ──────────────────────────────────────────────────────────
+
+const NotesTabContent: React.FC = () => {
+  const { markdown, mode, isSaving, isDirty, setMarkdown, setMode, exportMd } = useNotesStore();
+  const { scrollToAnnotation, saveAll, annotations } = useAnnotationStore();
+
+  // Sorted annotation IDs — same order buildAutoSection renders blockquotes
+  const sortedIds = useMemo(() =>
+    [...annotations]
+      .sort((a, b) => {
+        if (a.page !== b.page) return a.page - b.page;
+        const yDiff = b.rect[3] - a.rect[3];
+        if (Math.abs(yDiff) > 4) return yDiff;
+        return a.rect[0] - b.rect[0];
+      })
+      .map(a => a.id),
+    [annotations]
+  );
+
+  // Debounced textarea → store sync
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const handleEdit = useCallback((val: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setMarkdown(val), 300);
+  }, [setMarkdown]);
+
+  // Local textarea value — syncs from store when markdown changes
+  const [localMd, setLocalMd] = useState(markdown);
+  useEffect(() => { setLocalMd(markdown); }, [markdown]);
+
+  const handleSave = useCallback(async () => { await saveAll(); }, [saveAll]);
+
+  // Split around AUTO block so we render highlights with a custom blockquote
+  const [beforeAuto, autoContent, afterAuto] = useMemo(
+    () => splitAutoBlock(markdown),
+    [markdown]
+  );
+
+  // Counter ref reset each render — nth blockquote in auto section = sortedIds[n]
+  const bqCounter = useRef(0);
+  const HighlightBlockquote = useCallback(
+    ({ children }: React.PropsWithChildren) => {
+      const idx = bqCounter.current++;
+      const id = sortedIds[idx];
+      return (
+        <blockquote
+          className="notes-hl-quote"
+          onClick={id ? () => scrollToAnnotation(id) : undefined}
+          title={id ? 'Click to jump to this highlight in the PDF' : undefined}
+        >
+          {children}
+        </blockquote>
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sortedIds, scrollToAnnotation]
+  );
+
+  const modes: { key: NotesPanelMode; label: string }[] = [
+    { key: 'view', label: '👁 View' },
+    { key: 'split', label: '⊟ Split' },
+    { key: 'edit', label: '✏️ Edit' },
+  ];
+
+  const renderNotes = () => {
+    bqCounter.current = 0;
+    return (
+      <>
+        <ReactMarkdown>{beforeAuto}</ReactMarkdown>
+        <ReactMarkdown components={{ blockquote: HighlightBlockquote }}>
+          {autoContent}
+        </ReactMarkdown>
+        <ReactMarkdown>{afterAuto}</ReactMarkdown>
+      </>
+    );
+  };
+
+  return (
+    <div className="notes-tab-content">
+      {/* Mode bar */}
+      <div className="notes-mode-bar">
+        <div className="notes-mode-btns">
+          {modes.map(m => (
+            <button
+              key={m.key}
+              className={`notes-mode-btn ${mode === m.key ? 'active' : ''}`}
+              onClick={() => setMode(m.key)}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+        <div className="notes-mode-actions">
+          <button
+            className={`notes-save-btn ${isDirty ? 'dirty' : ''}`}
+            onClick={handleSave}
+            disabled={isSaving}
+            title="Save notes + annotations"
+          >
+            {isSaving ? '⏳' : '💾'} Save
+          </button>
+          <button className="notes-export-btn" onClick={exportMd} title="Export as .md file">
+            ↓ .md
+          </button>
+        </div>
+      </div>
+
+      {/* Panel body */}
+      <div className={`notes-body notes-body--${mode}`}>
+        {(mode === 'view' || mode === 'split') && (
+          <div className="notes-rendered">
+            {renderNotes()}
+          </div>
+        )}
+        {(mode === 'edit' || mode === 'split') && (
+          <textarea
+            className="notes-editor"
+            value={localMd}
+            onChange={e => {
+              setLocalMd(e.target.value);
+              handleEdit(e.target.value);
+            }}
+            spellCheck={false}
+            placeholder="Write your notes here…"
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ─── Main Panel ───────────────────────────────────────────────────────────────
 
 export const MarkdownPanel: React.FC = () => {
   const {
-    annotations, isPanelOpen, getDocumentAnnotations,
+    annotations, isPanelOpen,
     selectedAnnotationId, selectAnnotation, scrollToAnnotation,
   } = useAnnotationStore();
+  const { activeTab, setActiveTab, isDirty } = useNotesStore();
 
-  // Group by page, sorted page-ascending
   const pageGroups = useMemo(() => {
     const map = new Map<number, Annotation[]>();
     for (const ann of annotations) {
@@ -173,61 +281,77 @@ export const MarkdownPanel: React.FC = () => {
   if (!isPanelOpen) return null;
 
   const handleJumpPage = (page: number) => {
-    // find first annotation on that page and use scrollToAnnotation
     const first = annotations.find(a => a.page === page);
     if (first) scrollToAnnotation(first.id);
   };
 
   return (
     <div className="markdown-panel">
-      {/* Header */}
-      <div className="panel-header">
-        <span className="panel-title">📝 Notes</span>
-        <span className="panel-count">
-          {annotations.length} annotation{annotations.length !== 1 ? 's' : ''}
-          {pageGroups.length > 0 && ` · ${pageGroups.length} page${pageGroups.length !== 1 ? 's' : ''}`}
-        </span>
+      {/* Top-level tab bar */}
+      <div className="panel-tabs">
         <button
-          className="panel-download"
-          onClick={() => downloadMarkdown(getDocumentAnnotations())}
-          title="Download .md"
+          className={`panel-tab ${activeTab === 'annotations' ? 'active' : ''}`}
+          onClick={() => setActiveTab('annotations')}
         >
-          ↓ .md
+          🖊 Annotations
+          {annotations.length > 0 && (
+            <span className="panel-tab-badge">{annotations.length}</span>
+          )}
+        </button>
+        <button
+          className={`panel-tab ${activeTab === 'notes' ? 'active' : ''}`}
+          onClick={() => setActiveTab('notes')}
+        >
+          📝 Notes
+          {isDirty && <span className="panel-tab-dot" title="Unsaved changes">●</span>}
         </button>
       </div>
 
-      {/* Body */}
-      {annotations.length === 0 ? (
-        <div className="panel-empty">
-          <div className="empty-icon">🖊</div>
-          <p>No annotations yet.</p>
-          <p className="empty-hint">
-            Select <strong>Highlight</strong> tool and drag over text to create one.
-          </p>
-        </div>
-      ) : (
-        <div className="panel-body">
-          <div className="page-cards-list">
-            {pageGroups.map(([page, anns]) => (
-              <PageCard
-                key={page}
-                page={page}
-                anns={anns}
-                selectedId={selectedAnnotationId}
-                onJumpPage={handleJumpPage}
-                onSelect={selectAnnotation}
-              />
-            ))}
+      {/* Annotations tab */}
+      {activeTab === 'annotations' && (
+        <>
+          <div className="panel-header">
+            <span className="panel-count">
+              {annotations.length} annotation{annotations.length !== 1 ? 's' : ''}
+              {pageGroups.length > 0 && ` · ${pageGroups.length} page${pageGroups.length !== 1 ? 's' : ''}`}
+            </span>
           </div>
-        </div>
+
+          {annotations.length === 0 ? (
+            <div className="panel-empty">
+              <div className="empty-icon">🖊</div>
+              <p>No annotations yet.</p>
+              <p className="empty-hint">
+                Select <strong>Highlight</strong> tool and drag over text to create one.
+              </p>
+            </div>
+          ) : (
+            <div className="panel-body">
+              <div className="page-cards-list">
+                {pageGroups.map(([page, anns]) => (
+                  <PageCard
+                    key={page}
+                    page={page}
+                    anns={anns}
+                    selectedId={selectedAnnotationId}
+                    onJumpPage={handleJumpPage}
+                    onSelect={selectAnnotation}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="panel-stats">
+            {annotations.some(a => !a.saved) && (
+              <span className="unsaved-label">● Unsaved changes</span>
+            )}
+          </div>
+        </>
       )}
 
-      {/* Footer */}
-      <div className="panel-stats">
-        {annotations.some(a => !a.saved) && (
-          <span className="unsaved-label">● Unsaved changes</span>
-        )}
-      </div>
+      {/* Notes tab */}
+      {activeTab === 'notes' && <NotesTabContent />}
     </div>
   );
 };
