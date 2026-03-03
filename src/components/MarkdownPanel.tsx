@@ -264,7 +264,7 @@ const NotesTabContent: React.FC = () => {
 
 export const MarkdownPanel: React.FC = () => {
   const {
-    annotations, isPanelOpen,
+    annotations, isPanelOpen, togglePanel,
     selectedAnnotationId, selectAnnotation, scrollToAnnotation,
   } = useAnnotationStore();
   const { activeTab, setActiveTab, isDirty } = useNotesStore();
@@ -304,6 +304,16 @@ export const MarkdownPanel: React.FC = () => {
         >
           📝 Notes
           {isDirty && <span className="panel-tab-dot" title="Unsaved changes">●</span>}
+        </button>
+
+        {/* Close panel button */}
+        <button
+          className="panel-close-btn"
+          onClick={togglePanel}
+          title="Close panel"
+          aria-label="Close notes panel"
+        >
+          ✕
         </button>
       </div>
 

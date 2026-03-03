@@ -1,11 +1,12 @@
 /**
- * Toolbar component
- * Top bar: open PDF, zoom controls, tool selection, color picker,
- * save, export PDF, export MD, page navigation.
+ * Toolbar component — app-level top bar
+ * Controls: open PDF, save, export, panel toggles, theme.
+ * PDF-specific controls (tools, zoom, page nav) live in ViewerToolbar.
  */
 
 import React, { useRef } from 'react';
-import { useAnnotationStore, COLOR_PRESETS } from '../store/annotationStore';
+import { useAnnotationStore } from '../store/annotationStore';
+import { useNotesStore } from '../store/notesStore';
 import { downloadAnnotationsJson, importAnnotationsFromJson } from '../db/annotationDb';
 import { downloadAnnotatedPdf, getPdfBytes } from '../engine/pdfExport';
 import { downloadMarkdown } from '../engine/markdownEngine';
@@ -15,17 +16,15 @@ interface ToolbarProps {
   onUrlOpen?: (url: string, name: string) => void;
   isDark: boolean;
   onThemeToggle: () => void;
+  isViewerOpen: boolean;
+  onViewerToggle: () => void;
 }
 
-export const Toolbar: React.FC<ToolbarProps> = ({ onFileOpen, isDark, onThemeToggle }) => {
+export const Toolbar: React.FC<ToolbarProps> = ({ onFileOpen, isDark, onThemeToggle, isViewerOpen, onViewerToggle }) => {
   const store = useAnnotationStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
-    scale, setScale,
-    activeTool, setActiveTool,
-    activeColor, setActiveColor,
-    currentPage, totalPages, setCurrentPage,
     saveAll, saveStatus, isSaving,
     annotations, docName, pdfFile, pdfUrl,
     getDocumentAnnotations, isPanelOpen, togglePanel,
@@ -51,8 +50,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onFileOpen, isDark, onThemeTog
   };
 
   const handleExportMarkdown = () => {
-    const doc = getDocumentAnnotations();
-    downloadMarkdown(doc);
+    const { markdown } = useNotesStore.getState();
+    downloadMarkdown(docName || 'document', markdown);
   };
 
   const handleImportJson = async () => {
@@ -63,14 +62,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onFileOpen, isDark, onThemeTog
     await store.loadFromDb(doc.docId);
   };
 
-  const zoomIn  = () => setScale(Math.min(scale + 0.25, 4));
-  const zoomOut = () => setScale(Math.max(scale - 0.25, 0.5));
-  const zoomReset = () => setScale(1.5);
-
   const saveLabel =
     saveStatus === 'saving' ? '⟳ Saving…' :
-    saveStatus === 'saved'  ? '✓ Saved'   :
-    saveStatus === 'error'  ? '✗ Error'   : '↑ Save';
+      saveStatus === 'saved' ? '✓ Saved' :
+        saveStatus === 'error' ? '✗ Error' : '↑ Save';
 
   return (
     <div className="toolbar">
@@ -87,71 +82,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onFileOpen, isDark, onThemeTog
           📂 Open
         </button>
         <input ref={fileInputRef} type="file" accept=".pdf" style={{ display: 'none' }} onChange={handleFileChange} />
-      </div>
-
-      <div className="toolbar-divider" />
-
-      {/* ── Tool segment control ── */}
-      <div className="tool-segment">
-        <button
-          className={`tool-pill ${activeTool === 'select' ? 'active' : ''}`}
-          onClick={() => setActiveTool('select')}
-          title="Select (V)"
-        >
-          <span className="tool-pill-icon">◻</span> Select
-        </button>
-        <button
-          className={`tool-pill ${activeTool === 'highlight' ? 'active' : ''}`}
-          onClick={() => setActiveTool('highlight')}
-          title="Highlight (H)"
-        >
-          <span className="tool-pill-icon">🖊</span> Highlight
-        </button>
-      </div>
-
-      <div className="toolbar-divider" />
-
-      {/* ── Color swatches ── */}
-      <div className="toolbar-group color-group">
-        {COLOR_PRESETS.map(({ label, color }) => (
-          <button
-            key={label}
-            className={`color-swatch ${JSON.stringify(activeColor) === JSON.stringify(color) ? 'active' : ''}`}
-            title={label}
-            style={{ backgroundColor: `rgb(${Math.round(color[0]*255)},${Math.round(color[1]*255)},${Math.round(color[2]*255)})` }}
-            onClick={() => setActiveColor(color)}
-          />
-        ))}
-      </div>
-
-      <div className="toolbar-divider" />
-
-      {/* ── Zoom ── */}
-      <div className="toolbar-group zoom-group">
-        <button className="zoom-btn" onClick={zoomOut} title="Zoom out (−)" disabled={scale <= 0.5}>−</button>
-        <button className="zoom-label" onClick={zoomReset} title="Reset zoom">
-          {Math.round(scale * 100)}%
-        </button>
-        <button className="zoom-btn" onClick={zoomIn} title="Zoom in (+)" disabled={scale >= 4}>+</button>
-      </div>
-
-      <div className="toolbar-divider" />
-
-      {/* ── Page nav ── */}
-      <div className="toolbar-group page-nav">
-        <button
-          className="page-btn"
-          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-          disabled={currentPage <= 1}
-          title="Previous page"
-        >‹</button>
-        <span className="page-indicator">{currentPage} / {totalPages || '—'}</span>
-        <button
-          className="page-btn"
-          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-          disabled={currentPage >= totalPages}
-          title="Next page"
-        >›</button>
       </div>
 
       <div className="toolbar-spacer" />
@@ -183,6 +113,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onFileOpen, isDark, onThemeTog
           </details>
         </div>
 
+        <div className="toolbar-divider" />
+
+        {/* PDF viewer toggle */}
+        <button
+          className={`tb-btn panel-toggle ${isViewerOpen ? 'active' : ''}`}
+          onClick={onViewerToggle}
+          title="Toggle PDF viewer"
+        >
+          📄 PDF
+        </button>
+
         {/* Notes panel toggle */}
         <button
           className={`tb-btn panel-toggle ${isPanelOpen ? 'active' : ''}`}
@@ -191,6 +132,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onFileOpen, isDark, onThemeTog
         >
           ≡ Notes
         </button>
+
+        <div className="toolbar-divider" />
 
         {/* Theme toggle */}
         <button

@@ -1,51 +1,87 @@
 /* ─── Design Tokens ─────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
 :root {
+  /* ── Depth layers (light) ────────────────────── */
+  --shell-bg: #0f172a;
+  /* app bar — darkest anchor */
+  --shell-text: #e2e8f0;
+  --shell-border: #1e293b;
+  --panel-chrome: #ffffff;
+  /* panel header strips */
+  --panel-border: #e2e8f0;
+  /* borders between panels */
+  --content-bg: #f8faff;
+  /* scrollable content area */
+  --card-bg: #ffffff;
+  /* annotation / note cards */
+
+  /* ── Legacy aliases (keep for existing rules) ─ */
   --bg-base: #ffffff;
-  --bg-surface: #f0f4ff;
+  --bg-surface: #f4f7ff;
   --bg-elevated: #e8eeff;
   --bg-hover: #dce6ff;
-  --border: #c5d3f0;
-  --border-bright: #9fb3e8;
+  --border: #dde5f5;
+  --border-bright: #b3c3e8;
+
+  /* ── Typography ──────────────────────────────── */
   --text-primary: #0c182a;
   --text-secondary: #4a5a7a;
-  --text-muted: #8a9bbf;
+  --text-muted: #94a3b8;
+
+  /* ── Accent ──────────────────────────────────── */
   --accent: #2563eb;
   --accent-hover: #1d4ed8;
   --accent-dark: #1e40af;
+
+  /* ── Semantic ────────────────────────────────── */
   --highlight-yellow: rgba(255, 243, 50, 0.35);
   --success: #16a34a;
   --error: #dc2626;
   --warning: #d97706;
-  --toolbar-h: 52px;
+
+  /* ── Spacing / radius / motion ───────────────── */
+  --shell-h: 48px;
+  /* app-bar height */
+  --chrome-h: 40px;
+  /* panel header / viewer toolbar */
   --panel-w: 380px;
   --radius: 6px;
   --radius-sm: 3px;
-  --shadow: 0 4px 20px rgba(37, 99, 235, 0.12);
+  --shadow: 0 4px 20px rgba(37, 99, 235, 0.10);
   --transition: 0.12s ease;
 }
 
 /* ─── Dark Mode Override ────────────────────────────────────────── */
 [data-theme="dark"] {
-  --bg-base: #111111;
-  --bg-surface: #181818;
-  --bg-elevated: #202020;
-  --bg-hover: #2a2a2a;
-  --border: #2e2e2e;
-  --border-bright: #3d3d3d;
-  --text-primary: #efefef;
-  --text-secondary: #888888;
-  --text-muted: #4a4a4a;
+  --shell-bg: #0a0a0f;
+  --shell-text: #cbd5e1;
+  --shell-border: #1a1a2e;
+  --panel-chrome: #141420;
+  --panel-border: #1e1e2e;
+  --content-bg: #0d0d1a;
+  --card-bg: #141420;
+
+  --bg-base: #111118;
+  --bg-surface: #161622;
+  --bg-elevated: #1e1e2e;
+  --bg-hover: #252535;
+  --border: #2a2a3e;
+  --border-bright: #3a3a55;
+  --text-primary: #e8e8f5;
+  --text-secondary: #9090b8;
+  --text-muted: #50507a;
   --accent: #5b8af0;
   --accent-hover: #7ea3f5;
   --accent-dark: #3a6cd6;
-  --shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
 }
 
 [data-theme="dark"] .pdf-viewer-container,
 [data-theme="dark"] .pdf-drop-zone,
 [data-theme="dark"] .pdf-loading-state,
 [data-theme="dark"] .pdf-error-state {
-  background: #2d2f39;
+  background: var(--content-bg);
 }
 
 [data-theme="dark"] .pdf-page-loading {
@@ -56,27 +92,26 @@
   background: rgba(91, 138, 240, 0.03);
 }
 
-/* ─── Theme Toggle Button ───────────────────────────────────────── */
+/* ─── Theme Toggle (shell bar) ──────────────────────────────────── */
 .theme-toggle {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--border);
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--text-secondary);
-  font-size: 16px;
+  color: rgba(226, 232, 240, 0.55);
+  font-size: 15px;
   cursor: pointer;
   transition: all var(--transition);
   flex-shrink: 0;
 }
 
 .theme-toggle:hover {
-  background: var(--bg-hover);
-  border-color: var(--border-bright);
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--shell-text);
 }
 
 /* ─── Reset ─────────────────────────────────────────────────────── */
@@ -98,7 +133,7 @@ body,
   color: var(--text-primary);
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
 
 /* ─── App Layout ─────────────────────────────────────────────────── */
 .app-root {
@@ -106,77 +141,131 @@ body,
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+  background: var(--content-bg);
 }
 
+/* Two-panel body — flex row with separator */
 .app-body {
   display: flex;
   flex: 1;
   overflow: hidden;
+  background: var(--panel-border);
+  gap: 0;
 }
 
+/* ─── Viewer pane ────────────────────────────────────────────────── */
 .viewer-pane {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  background: var(--panel-chrome);
+  position: relative;
 }
 
+/* Close button lives inside viewer-toolbar — no longer floating */
+.viewer-close-btn {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.viewer-close-btn:hover {
+  color: var(--error);
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.2);
+}
+
+/* ─── Notes pane ─────────────────────────────────────────────────── */
 .panel-pane {
-  /* width is set inline by React drag state */
-  border-left: none;
-  /* handled by resize-handle */
-  background: var(--bg-surface);
+  /* width set inline; flex:1 when viewer is closed */
+  background: var(--panel-chrome);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   flex-shrink: 0;
+  border-left: 1px solid var(--panel-border);
 }
 
 /* ─── Resize Handle ────────────────────────────────────────────── */
 .resize-handle {
   flex-shrink: 0;
-  width: 6px;
+  width: 4px;
   cursor: col-resize;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  background: var(--panel-border);
   position: relative;
   z-index: 10;
-  transition: background var(--transition);
+  transition: background var(--transition), width var(--transition);
 }
 
 .resize-handle:hover,
 .resize-handle:active {
-  background: rgba(37, 99, 235, 0.08);
+  background: var(--accent);
+  width: 5px;
 }
 
 .resize-handle-bar {
-  width: 2px;
-  height: 40px;
-  border-radius: 2px;
-  background: var(--border);
-  transition: background var(--transition), height var(--transition);
+  display: none;
+  /* handle is the full strip itself */
 }
 
-.resize-handle:hover .resize-handle-bar,
-.resize-handle:active .resize-handle-bar {
-  background: var(--accent);
-  height: 60px;
-}
-
-/* ─── Toolbar ────────────────────────────────────────────────────── */
-.toolbar {
-  height: 56px;
-  background: var(--bg-base);
-  border-bottom: 1px solid var(--border);
+/* ─── Viewer Toolbar — panel chrome strip ────────────────────────── */
+.viewer-toolbar {
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  height: var(--chrome-h);
+  padding: 0 10px;
+  gap: 3px;
+  background: var(--panel-chrome);
+  border-bottom: 1px solid var(--panel-border);
+  flex-shrink: 0;
+  z-index: 5;
+}
+
+.vt-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--panel-border);
+  margin: 0 5px;
+  flex-shrink: 0;
+}
+
+.vt-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.vt-spacer {
+  flex: 1;
+}
+
+/* ─── App Shell Toolbar ──────────────────────────────────────────── */
+.toolbar {
+  height: var(--shell-h);
+  background: var(--shell-bg);
+  border-bottom: 1px solid var(--shell-border);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
   gap: 2px;
   flex-shrink: 0;
   z-index: 100;
-  box-shadow: 0 1px 0 var(--border), 0 2px 8px rgba(37, 99, 235, 0.06);
 }
 
 /* ── Brand ── */
@@ -184,43 +273,43 @@ body,
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-right: 16px;
-  border-right: 1px solid var(--border);
-  margin-right: 8px;
+  padding-right: 14px;
+  border-right: 1px solid var(--shell-border);
+  margin-right: 6px;
   text-decoration: none;
 }
 
 .brand-icon {
-  width: 30px;
-  height: 30px;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
-  border-radius: 8px;
+  width: 26px;
+  height: 26px;
+  background: linear-gradient(135deg, var(--accent) 0%, #6366f1 100%);
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
+  font-size: 13px;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.45);
 }
 
 .brand-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.03em;
+  color: var(--shell-text);
+  letter-spacing: -0.02em;
   white-space: nowrap;
 }
 
 .brand-name span {
-  color: var(--accent);
+  color: #818cf8;
 }
 
-/* ── Divider ── */
+/* ── Shell divider ── */
 .toolbar-divider {
   width: 1px;
-  height: 20px;
-  background: var(--border);
-  margin: 0 8px;
+  height: 18px;
+  background: var(--shell-border);
+  margin: 0 6px;
   flex-shrink: 0;
 }
 
@@ -235,17 +324,17 @@ body,
   flex: 1;
 }
 
-/* ── Generic toolbar button ── */
+/* ── Shell toolbar button ── */
 .tb-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 11px;
+  gap: 5px;
+  padding: 5px 10px;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 5px;
   background: transparent;
-  color: var(--text-secondary);
-  font-size: 13px;
+  color: rgba(226, 232, 240, 0.65);
+  font-size: 12.5px;
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
@@ -255,17 +344,16 @@ body,
 }
 
 .tb-btn:hover:not(:disabled) {
-  background: var(--bg-elevated);
-  border-color: var(--border);
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--shell-text);
 }
 
 .tb-btn:active:not(:disabled) {
-  background: var(--bg-hover);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .tb-btn:disabled {
-  opacity: 0.35;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
@@ -556,11 +644,11 @@ body,
   margin: 4px 0;
 }
 
-/* ── Panel toggle ── */
+/* ── Panel toggles on shell bar ── */
 .panel-toggle.active {
-  background: rgba(37, 99, 235, 0.10);
-  color: var(--accent);
-  border-color: rgba(37, 99, 235, 0.3);
+  background: rgba(91, 138, 240, 0.18);
+  color: #93c5fd;
+  border-color: rgba(91, 138, 240, 0.35);
 }
 
 /* ─── PDF Viewer ─────────────────────────────────────────────────── */
@@ -573,7 +661,7 @@ body,
   align-items: center;
   padding: 24px 0;
   gap: 24px;
-  background: #edf2ff;
+  background: var(--content-bg);
   scrollbar-width: thin;
   scrollbar-color: var(--border-bright) transparent;
 }
@@ -909,26 +997,31 @@ body,
 .panel-header {
   display: flex;
   align-items: center;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--panel-border);
   gap: 8px;
   flex-shrink: 0;
 }
 
 .panel-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   flex: 1;
 }
 
-/* ─── Panel Tabs (top-level: Annotations / Notes) ───────────────── */
+/* ─── Panel Tabs — matches viewer-toolbar chrome height ─────────── */
 .panel-tabs {
   display: flex;
-  background: var(--bg-base);
-  border-bottom: 1px solid var(--border);
+  align-items: center;
+  height: var(--chrome-h);
+  background: var(--panel-chrome);
+  border-bottom: 1px solid var(--panel-border);
   flex-shrink: 0;
   gap: 0;
+  padding: 0 4px;
 }
 
 .panel-tab {
@@ -937,11 +1030,12 @@ body,
   align-items: center;
   justify-content: center;
   gap: 5px;
-  padding: 9px 12px;
+  height: 100%;
+  padding: 0 12px;
   border: none;
   background: transparent;
   color: var(--text-muted);
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition);
@@ -950,7 +1044,7 @@ body,
 }
 
 .panel-tab:hover {
-  color: var(--text-primary);
+  color: var(--text-secondary);
   background: var(--bg-hover);
 }
 
@@ -977,6 +1071,31 @@ body,
   color: var(--warning);
   font-size: 10px;
   line-height: 1;
+}
+
+/* ─── Panel Close Button ─────────────────────────────────────────── */
+.panel-close-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: auto 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--transition), background var(--transition), border-color var(--transition);
+}
+
+.panel-close-btn:hover {
+  color: var(--error, #f87171);
+  background: rgba(248, 113, 113, 0.1);
+  border-color: rgba(248, 113, 113, 0.25);
 }
 
 .panel-download {
