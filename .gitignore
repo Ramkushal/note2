@@ -12,6 +12,8 @@ eb_debug.log
 # Dependencies (restored by `npm install`)
 node_modules
 
+# website files
+website
 # Build outputs (restored by `npm run build` / `npm run dist`)
 dist
 dist-ssr
