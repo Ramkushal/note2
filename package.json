@@ -1,9 +1,9 @@
 {
-  "name": "note2",
+  "name": "A'note",
   "private": true,
   "version": "1.0.0",
-  "description": "Enterprise-grade PDF annotation viewer with highlights, comments, and Markdown export.",
-  "author": "Mittu",
+  "description": "A PDF annotation viewer with highlights, comments, and Markdown export.",
+  "author": "Ram kushal",
   "type": "module",
   "main": "main.cjs",
   "scripts": {
@@ -15,9 +15,9 @@
     "dist": "cross-env ELECTRON=1 tsc -b && cross-env ELECTRON=1 vite build && electron-packager . \"PDF Annotator\" --platform=win32 --arch=x64 --out=release --overwrite --no-prune --ignore=src --ignore=node_modules\\/.* --ignore=.git --ignore=eb_log.txt --ignore=eb_debug.log"
   },
   "build": {
-    "appId": "com.mittu.pdfannotator",
-    "productName": "PDF Annotator",
-    "copyright": "Copyright © 2026 Mittu",
+    "appId": "com.Ram kushal.a-note",
+    "productName": "A'note",
+    "copyright": "Copyright © 2026 Ram kushal",
     "npmRebuild": false,
     "asar": false,
     "directories": {
@@ -43,7 +43,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "PDF Annotator"
+      "shortcutName": "A'note"
     }
   },
   "dependencies": {

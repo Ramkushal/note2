@@ -12,8 +12,8 @@ function createWindow() {
     height: 900,
     minWidth: 900,
     minHeight: 600,
-    title: 'PDF Annotator',
-    icon: path.join(__dirname, '../public/vite.svg'),
+    title: 'A\'note',
+    icon: path.join(__dirname, '../public/logo.png'),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,

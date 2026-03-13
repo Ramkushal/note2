@@ -1,6 +1,6 @@
-# PDF Annotator (note2)
+# A'note
 
-An enterprise-grade PDF annotation viewer built with React, TypeScript, Vite, and Electron. It features advanced PDF highlighting, commenting, and a robust Markdown notes architecture that syncs with your PDF annotations.
+An PDF annotation viewer built with React, TypeScript, Vite, and Electron. It features advanced PDF highlighting, commenting, and a robust Markdown notes architecture that syncs with your PDF annotations.
 
 ## Features
 

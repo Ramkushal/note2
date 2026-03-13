@@ -11,7 +11,7 @@ function createWindow() {
     height: 900,
     minWidth: 900,
     minHeight: 600,
-    title: 'PDF Annotator',
+    title: 'A\'note',
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
