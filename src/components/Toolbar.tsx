@@ -72,8 +72,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onFileOpen, isDark, onThemeTog
 
       {/* ── Brand ── */}
       <div className="toolbar-brand">
-        <div className="brand-icon">📑</div>
-        <span className="brand-name">PDF<span>Annotator</span></span>
+        <img src="./logo.png" alt="A'note logo" className="brand-logo" />
+        <span className="brand-name">A'note</span>
       </div>
 
       {/* ── File open ── */}

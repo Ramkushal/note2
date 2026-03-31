@@ -107,6 +107,7 @@
   cursor: pointer;
   transition: all var(--transition);
   flex-shrink: 0;
+  -webkit-app-region: no-drag;
 }
 
 .theme-toggle:hover {
@@ -262,10 +263,11 @@ body,
   border-bottom: 1px solid var(--shell-border);
   display: flex;
   align-items: center;
-  padding: 0 14px;
+  padding: 0 140px 0 14px;
   gap: 2px;
   flex-shrink: 0;
   z-index: 100;
+  -webkit-app-region: drag;
 }
 
 /* ── Brand ── */
@@ -279,17 +281,12 @@ body,
   text-decoration: none;
 }
 
-.brand-icon {
+.brand-logo {
   width: 26px;
   height: 26px;
-  background: linear-gradient(135deg, var(--accent) 0%, #6366f1 100%);
-  border-radius: 7px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
+  object-fit: contain;
+  border-radius: 4px;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.45);
 }
 
 .brand-name {
@@ -341,6 +338,7 @@ body,
   transition: background var(--transition), color var(--transition), border-color var(--transition);
   white-space: nowrap;
   line-height: 1;
+  -webkit-app-region: no-drag;
 }
 
 .tb-btn:hover:not(:disabled) {

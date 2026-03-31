@@ -7,7 +7,19 @@ export default defineConfig({
   // Use relative base for Electron (file:// protocol)
   // Use absolute base for normal web deployment
   base: isElectron ? './' : '/',
-  plugins: [react()],
+  build: {
+    outDir: 'app-dist',
+    emptyOutDir: true
+  },
+  plugins: [
+    react(),
+    {
+      name: 'remove-crossorigin',
+      transformIndexHtml(html) {
+        return html.replace(/ crossorigin/g, '');
+      }
+    }
+  ],
   optimizeDeps: {
     include: ['pdfjs-dist'],
   },
