@@ -13,7 +13,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     title: 'A\'note',
-    icon: path.join(__dirname, '../icons/icon.ico'),
+    icon:  '../logos/icon.ico',
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,

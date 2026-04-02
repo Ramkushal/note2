@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "dist": "cross-env ELECTRON=1 tsc -b && cross-env ELECTRON=1 vite build && electron-packager . \"A'note\" --icon=build/icons/icon.ico --platform=win32 --arch=x64 --out=release --overwrite --no-prune --ignore=src --ignore=node_modules\\/.* --ignore=.git --ignore=eb_log.txt --ignore=eb_debug.log",
+    "dist": "cross-env ELECTRON=1 tsc -b && cross-env ELECTRON=1 vite build && electron-packager . \"A'note\" --icon=./logos/icon.ico --platform=win32 --arch=x64 --out=release --overwrite --no-prune --ignore=src --ignore=node_modules\\/.* --ignore=.git --ignore=eb_log.txt --ignore=eb_debug.log",
     "installer": "cross-env ELECTRON=1 npm run build && cross-env ELECTRON=1 electron-builder --win"
   },
   "build": {
@@ -20,7 +20,8 @@
     "productName": "A'note",
     "copyright": "Copyright © 2026 Ram kushal",
     "npmRebuild": false,
-    "asar": false,
+    "asar": true,
+    "icon": "./logos/icon.ico",
     "directories": {
       "output": "release"
     },
