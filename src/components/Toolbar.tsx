@@ -4,7 +4,7 @@
  * PDF-specific controls (tools, zoom, page nav) live in ViewerToolbar.
  */
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useAnnotationStore } from '../store/annotationStore';
 import { useNotesStore } from '../store/notesStore';
 import { downloadAnnotationsJson, importAnnotationsFromJson } from '../db/annotationDb';
@@ -23,6 +23,20 @@ interface ToolbarProps {
 export const Toolbar: React.FC<ToolbarProps> = ({ onFileOpen, isDark, onThemeToggle, isViewerOpen, onViewerToggle }) => {
   const store = useAnnotationStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close export dropdown on outside click
+  useEffect(() => {
+    if (!exportOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setExportOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [exportOpen]);
 
   const {
     saveAll, saveStatus, isSaving,
@@ -72,8 +86,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onFileOpen, isDark, onThemeTog
 
       {/* ── Brand ── */}
       <div className="toolbar-brand">
-        <img src="./logo.png" alt="A'note logo" className="brand-logo" />
-        <span className="brand-name">A'note</span>
+        <span className="brand-name" style={{ color: '#22C55E' }}>
+          A'<span style={{ color: '#2563eb' }}>note</span>
+        </span>
       </div>
 
       {/* ── File open ── */}
@@ -100,17 +115,23 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onFileOpen, isDark, onThemeTog
         </button>
 
         {/* Export dropdown */}
-        <div className="export-menu-wrapper">
-          <details className="export-menu">
-            <summary className="tb-btn export-btn">Export ▾</summary>
+        <div className="export-menu-wrapper" ref={exportMenuRef}>
+          <button
+            className="tb-btn export-btn"
+            onClick={() => setExportOpen(o => !o)}
+            aria-expanded={exportOpen}
+          >
+            Export ▾
+          </button>
+          {exportOpen && (
             <div className="export-dropdown">
-              <button onClick={handleExportJson}>📋 Annotations JSON</button>
-              <button onClick={handleExportPdf}>📄 Annotated PDF</button>
-              <button onClick={handleExportMarkdown}>📝 Markdown</button>
+              <button onClick={() => { handleExportJson(); setExportOpen(false); }}>📋 Annotations JSON</button>
+              <button onClick={() => { handleExportPdf(); setExportOpen(false); }}>📄 Annotated PDF</button>
+              <button onClick={() => { handleExportMarkdown(); setExportOpen(false); }}>📝 Markdown</button>
               <div className="export-divider" />
-              <button onClick={handleImportJson}>📥 Import JSON</button>
+              <button onClick={() => { handleImportJson(); setExportOpen(false); }}>📥 Import JSON</button>
             </div>
-          </details>
+          )}
         </div>
 
         <div className="toolbar-divider" />

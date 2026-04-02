@@ -7,6 +7,15 @@
 import { useState, useEffect, useRef } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 
+// Suppress known benign PDF.js worker warnings that can't be silenced via the API
+// because the pdfjs-dist module object is sealed/frozen.
+const _origWarn = console.warn.bind(console);
+console.warn = (...args: unknown[]) => {
+  const msg = typeof args[0] === 'string' ? args[0] : '';
+  if (msg.includes('Push buttons without action') || msg.includes('ButtonWidget')) return;
+  _origWarn(...args);
+};
+
 interface UsePdfLoaderResult {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   pdfDoc: any | null;

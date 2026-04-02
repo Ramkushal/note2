@@ -34,6 +34,10 @@ interface AnnotationState {
   // Scroll-to-annotation trigger (set by MarkdownPanel, consumed by PdfViewer)
   scrollTrigger: { annotationId: string; page: number; ts: number } | null;
 
+  // Explicit navigation intent (set by nav buttons/input, consumed by PdfViewer).
+  // Separate from currentPage so the observer's setCurrentPage doesn't re-trigger scrolls.
+  navTarget: { page: number; ts: number } | null;
+
   // Actions
   setPdfFile: (file: File) => Promise<void>;
   setPdfUrl: (url: string, name: string) => Promise<void>;
@@ -44,6 +48,7 @@ interface AnnotationState {
   setActiveColor: (color: [number, number, number]) => void;
   togglePanel: () => void;
   setCurrentUser: (user: AppUser) => void;
+  navigateToPage: (page: number) => void;
 
   addAnnotation: (partial: Omit<Annotation, 'id' | 'author' | 'createdAt' | 'updatedAt' | 'version' | 'saved'>) => Annotation;
   updateAnnotation: (id: string, patch: Partial<Annotation>) => void;
@@ -79,6 +84,7 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
   isSaving: false,
   saveStatus: 'idle',
   scrollTrigger: null,
+  navTarget: null,
   auditLog: [],
 
   setPdfFile: async (file: File) => {
@@ -103,6 +109,10 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
   setActiveColor: (color) => set({ activeColor: color }),
   togglePanel: () => set((s) => ({ isPanelOpen: !s.isPanelOpen })),
   setCurrentUser: (user) => set({ currentUser: user }),
+  navigateToPage: (page) => set((s) => ({
+    currentPage: Math.min(Math.max(1, page), s.totalPages || page),
+    navTarget: { page: Math.min(Math.max(1, page), s.totalPages || page), ts: Date.now() },
+  })),
 
   addAnnotation: (partial) => {
     const { currentUser, annotations, docVersion } = get();

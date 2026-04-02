@@ -4,7 +4,7 @@
  * Contains: tool selector, color swatches, zoom, page navigation, close button.
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAnnotationStore, COLOR_PRESETS } from '../store/annotationStore';
 
 interface ViewerToolbarProps {
@@ -16,12 +16,30 @@ export const ViewerToolbar: React.FC<ViewerToolbarProps> = ({ onClose }) => {
         scale, setScale,
         activeTool, setActiveTool,
         activeColor, setActiveColor,
-        currentPage, totalPages, setCurrentPage,
+        currentPage, totalPages, navigateToPage,
     } = useAnnotationStore();
+
+    // Local draft for the page input so the user can type freely without jumping
+    const [pageInputValue, setPageInputValue] = useState(String(currentPage));
+
+    // Keep the input in sync when the observer updates currentPage during free scroll
+    useEffect(() => {
+        setPageInputValue(String(currentPage));
+    }, [currentPage]);
 
     const zoomIn = () => setScale(Math.min(scale + 0.25, 4));
     const zoomOut = () => setScale(Math.max(scale - 0.25, 0.5));
     const zoomReset = () => setScale(1.5);
+
+    const commitPageInput = () => {
+        const n = parseInt(pageInputValue, 10);
+        if (!isNaN(n) && n >= 1 && n <= totalPages) {
+            navigateToPage(n);
+        } else {
+            // Reset to current page if invalid
+            setPageInputValue(String(currentPage));
+        }
+    };
 
     return (
         <div className="viewer-toolbar">
@@ -78,14 +96,33 @@ export const ViewerToolbar: React.FC<ViewerToolbarProps> = ({ onClose }) => {
             <div className="vt-group page-nav">
                 <button
                     className="page-btn"
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    onClick={() => navigateToPage(currentPage - 1)}
                     disabled={currentPage <= 1}
                     title="Previous page"
                 >‹</button>
-                <span className="page-indicator">{currentPage} / {totalPages || '—'}</span>
+
+                <div className="page-input-group">
+                    <input
+                        className="page-input"
+                        type="number"
+                        min={1}
+                        max={totalPages || 1}
+                        value={pageInputValue}
+                        onChange={(e) => setPageInputValue(e.target.value)}
+                        onBlur={commitPageInput}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') { commitPageInput(); e.currentTarget.blur(); }
+                            if (e.key === 'Escape') { setPageInputValue(String(currentPage)); e.currentTarget.blur(); }
+                        }}
+                        title="Go to page"
+                        aria-label="Current page"
+                    />
+                    <span className="page-total">/ {totalPages || '—'}</span>
+                </div>
+
                 <button
                     className="page-btn"
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    onClick={() => navigateToPage(currentPage + 1)}
                     disabled={currentPage >= totalPages}
                     title="Next page"
                 >›</button>

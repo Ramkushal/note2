@@ -1,0 +1,15 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+  <text x="50%" y="220" 
+    text-anchor="middle" 
+    font-size="230" 
+    font-family="Inter, system-ui, Arial, sans-serif" 
+    fill="#22C55E" 
+    font-weight="900">A</text>
+
+  <text x="185" y="90" 
+    font-size="110" 
+    font-family="Inter, system-ui, Arial, sans-serif" 
+    fill="#22C55E" 
+    font-weight="900">'</text>
+</svg>

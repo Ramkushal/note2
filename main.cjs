@@ -12,7 +12,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     title: 'A\'note',
-    icon: path.join(__dirname, 'public/logo.png'),
+    icon: path.join(__dirname, './icons/icon.ico'),
     titleBarStyle: 'hidden',
     titleBarOverlay: {
       color: '#0f172a', /* --shell-bg */

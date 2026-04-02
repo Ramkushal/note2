@@ -12,11 +12,13 @@ import { PdfPage } from './PdfPage';
 interface PdfViewerProps {
   file: File | null;
   url: string | null;
+  onFileOpen?: (file: File) => void;
 }
 
-export const PdfViewer: React.FC<PdfViewerProps> = ({ file, url }) => {
+export const PdfViewer: React.FC<PdfViewerProps> = ({ file, url, onFileOpen }) => {
   const { pdfDoc, numPages, loading, error } = usePdfLoader(file, url);
-  const { scale, setTotalPages, setCurrentPage, scrollTrigger } = useAnnotationStore();
+  const { scale, setTotalPages, setCurrentPage, navTarget, scrollTrigger } = useAnnotationStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [visiblePages, setVisiblePages] = useState<Set<number>>(new Set([1]));
@@ -26,7 +28,8 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ file, url }) => {
     if (numPages) setTotalPages(numPages);
   }, [numPages, setTotalPages]);
 
-  // IntersectionObserver for page virtualization
+  // IntersectionObserver — purely for virtualization + tracking current page during FREE scroll.
+  // Does NOT trigger any scrolling itself, so there is no feedback loop.
   useEffect(() => {
     if (!numPages) return;
     pageRefs.current = pageRefs.current.slice(0, numPages);
@@ -40,7 +43,6 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ file, url }) => {
             if (!page) continue;
             if (entry.isIntersecting) {
               next.add(page);
-              // Preload neighbors
               if (page > 1) next.add(page - 1);
               if (page < numPages) next.add(page + 1);
             }
@@ -48,7 +50,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ file, url }) => {
           return next;
         });
 
-        // Track current page (topmost visible)
+        // Update the page indicator (for toolbar display) only — never calls scrollToPage.
         const visible = entries
           .filter(e => e.isIntersecting)
           .map(e => parseInt((e.target as HTMLElement).dataset.page ?? '0', 10))
@@ -65,7 +67,8 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ file, url }) => {
 
   const scrollToPage = useCallback((pageNum: number) => {
     const el = pageRefs.current[pageNum - 1];
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
   // Watch scrollTrigger from store (fired by MarkdownPanel item clicks)
@@ -74,13 +77,42 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ file, url }) => {
     scrollToPage(scrollTrigger.page);
   }, [scrollTrigger, scrollToPage]);
 
+  // Watch navTarget from store — only set by explicit nav (buttons / page input).
+  // The IntersectionObserver uses setCurrentPage which does NOT set navTarget,
+  // so free scrolling never triggers this effect. Zero feedback loop.
+  useEffect(() => {
+    if (!navTarget) return;
+    scrollToPage(navTarget.page);
+  }, [navTarget, scrollToPage]);
+
+
   if (!file && !url) {
     return (
       <div className="pdf-drop-zone">
         <div className="drop-zone-inner">
           <div className="drop-icon">📄</div>
           <p className="drop-title">Drop a PDF here</p>
-          <p className="drop-sub">or use the Open button in the toolbar</p>
+          {onFileOpen && (
+            <>
+              <button
+                className="drop-upload-btn"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                📂 Upload PDF
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) onFileOpen(f);
+                  e.target.value = '';
+                }}
+              />
+            </>
+          )}
         </div>
       </div>
     );

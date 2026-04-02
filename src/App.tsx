@@ -90,12 +90,12 @@ function App() {
 
             <div className="app-body" ref={appBodyRef}>
                 {/* PDF Viewer */}
-                {isViewerOpen && (
-                    <div className="viewer-pane">
-                        <ViewerToolbar onClose={() => setIsViewerOpen(false)} />
-                        <PdfViewer file={localFile} url={remoteUrl} />
-                    </div>
-                )}
+                {/* PDF Viewer — always mounted to preserve PDF state; hidden via CSS when closed */}
+                <div className="viewer-pane" style={isViewerOpen ? undefined : { display: 'none' }}>
+                    <ViewerToolbar onClose={() => setIsViewerOpen(false)} />
+                    <PdfViewer file={localFile} url={remoteUrl} onFileOpen={handleFileOpen} />
+                </div>
+
 
                 {/* Resize handle — only visible when panel is open */}
                 {isPanelOpen && isViewerOpen && (

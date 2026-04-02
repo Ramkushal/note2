@@ -509,6 +509,50 @@ body,
   padding: 0 4px;
 }
 
+.page-input-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
+}
+
+.page-input {
+  width: 38px;
+  height: 22px;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-size: 11.5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  /* Hide browser number spinners */
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.page-input::-webkit-inner-spin-button,
+.page-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.page-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.page-total {
+  font-size: 11.5px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
 /* ── Color swatches ── */
 .color-group {
   gap: 5px;
@@ -578,19 +622,6 @@ body,
 /* ── Export dropdown ── */
 .export-menu-wrapper {
   position: relative;
-}
-
-.export-menu {
-  list-style: none;
-}
-
-.export-menu>summary {
-  list-style: none;
-  cursor: pointer;
-}
-
-.export-menu>summary::-webkit-details-marker {
-  display: none;
 }
 
 .export-btn {
@@ -941,6 +972,35 @@ body,
 .drop-sub {
   font-size: 13px;
   color: var(--text-muted);
+}
+
+.drop-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 8px 20px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--transition), box-shadow var(--transition), transform var(--transition);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.drop-upload-btn:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
+  transform: translateY(-1px);
+}
+
+.drop-upload-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.2);
 }
 
 .pdf-loading-state,
